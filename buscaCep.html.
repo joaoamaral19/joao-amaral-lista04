@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca CEP</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            cursor: pointer;
+        }
+
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+        }
+
+        .erro {
+            color: red;
+        }
+
+        .sucesso {
+            color: green;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>buscaCEP</h1>
+
+    <input
+        type="text"
+        id="cep"
+        placeholder="Digite o CEP (ex: 01001000)"
+        maxlength="9"
+    >
+
+    <button onclick="buscarCEP()">Buscar Endereço</button>
+
+    <div id="resultado"></div>
+
+    <script>
+        async function buscarCEP() {
+
+            const cep = document.getElementById("cep").value
+                .replace(/\D/g, "");
+
+            const resultado = document.getElementById("resultado");
+
+            if (cep.length !== 8) {
+                resultado.innerHTML =
+                    "<p class='erro'>Digite um CEP válido com 8 números!</p>";
+                return;
+            }
+
+            resultado.innerHTML = "Buscando endereço...";
+
+            try {
+
+                const resposta = await fetch(
+                    `https://viacep.com.br/ws/${cep}/json/`
+                );
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao consultar o CEP.");
+                }
+
+                const dados = await resposta.json();
+
+                if (dados.erro) {
+                    resultado.innerHTML =
+                        "<p class='erro'>CEP não encontrado!</p>";
+                    return;
+                }
+
+                resultado.innerHTML = `
+                    <h2>Endereço encontrado:</h2>
+                    <p><strong>Rua:</strong> ${dados.logradouro || "Não informado"}</p>
+                    <p><strong>Bairro:</strong> ${dados.bairro || "Não informado"}</p>
+                    <p><strong>Cidade:</strong> ${dados.localidade}</p>
+                    <p><strong>Estado:</strong> ${dados.uf}</p>
+                `;
+
+            } catch (erro) {
+
+                resultado.innerHTML =
+                    "<p class='erro'>Não foi possível consultar o CEP. Verifique sua conexão.</p>";
+
+                console.error(erro);
+            }
+        }
+    </script>
+
+</body>
+</html>
