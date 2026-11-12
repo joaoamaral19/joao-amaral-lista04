@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Cidades por Estado</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Lista de Cidades a partir de Estados</h1>
+
+    <label for="estado">Selecione um estado:</label>
+    <select id="estado">
+        <option value="">Carregando estados...</option>
+    </select>
+
+    <br>
+
+    <label for="cidade">Selecione uma cidade:</label>
+    <select id="cidade" disabled>
+        <option value="">Primeiro selecione um estado</option>
+    </select>
+
+    <div id="resultado"></div>
+
+    <script>
+        const estadoSelect = document.getElementById("estado");
+        const cidadeSelect = document.getElementById("cidade");
+        const resultado = document.getElementById("resultado");
+
+        // Buscar todos os estados do Brasil
+        async function carregarEstados() {
+            try {
+                const resposta = await fetch(
+                    "https://servicodados.ibge.gov.br/api/v1/localidades/estados"
+                );
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao buscar estados.");
+                }
+
+                const estados = await resposta.json();
+
+                estados.sort((a, b) =>
+                    a.nome.localeCompare(b.nome)
+                );
+
+                estadoSelect.innerHTML =
+                    '<option value="">Selecione um estado</option>';
+
+                estados.forEach(estado => {
+                    const opcao = document.createElement("option");
+
+                    opcao.value = estado.sigla;
+                    opcao.textContent = estado.nome;
+
+                    estadoSelect.appendChild(opcao);
+                });
+
+            } catch (erro) {
+                estadoSelect.innerHTML =
+                    '<option value="">Erro ao carregar estados</option>';
+
+                console.error(erro);
+            }
+        }
+
+        // Buscar cidades do estado selecionado
+        async function carregarCidades(uf) {
+            cidadeSelect.disabled = true;
+            cidadeSelect.innerHTML =
+                '<option value="">Carregando cidades...</option>';
+
+            try {
+                const resposta = await fetch(
+                    `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`
+                );
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao buscar cidades.");
+                }
+
+                const cidades = await resposta.json();
+
+                cidadeSelect.innerHTML =
+                    '<option value="">Selecione uma cidade</option>';
+
+                cidades.forEach(cidade => {
+                    const opcao = document.createElement("option");
+
+                    opcao.value = cidade.id;
+                    opcao.textContent = cidade.nome;
+
+                    cidadeSelect.appendChild(opcao);
+                });
+
+                cidadeSelect.disabled = false;
+
+            } catch (erro) {
+                cidadeSelect.innerHTML =
+                    '<option value="">Erro ao carregar cidades</option>';
+
+                console.error(erro);
+            }
+        }
+
+        // Quando o estado for selecionado
+        estadoSelect.addEventListener("change", function () {
+            const uf = estadoSelect.value;
+
+            resultado.innerHTML = "";
+
+            if (uf === "") {
+                cidadeSelect.disabled = true;
+                cidadeSelect.innerHTML =
+                    '<option value="">Primeiro selecione um estado</option>';
+                return;
+            }
+
+            carregarCidades(uf);
+        });
+
+        // Quando a cidade for selecionada
+        cidadeSelect.addEventListener("change", function () {
+            const nomeEstado =
+                estadoSelect.options[estadoSelect.selectedIndex].text;
+
+            const nomeCidade =
+                cidadeSelect.options[cidadeSelect.selectedIndex].text;
+
+            if (cidadeSelect.value === "") {
+                resultado.innerHTML = "";
+                return;
+            }
+
+            resultado.innerHTML = `
+                <h2>Localização escolhida:</h2>
+                <p><strong>Estado:</strong> ${nomeEstado}</p>
+                <p><strong>Cidade:</strong> ${nomeCidade}</p>
+            `;
+        });
+
+        // Iniciar carregamento dos estados
+        carregarEstados();
+    </script>
+
+</body>
+</html>
